@@ -1,0 +1,31 @@
+#!/bin/bash
+
+if (( $# != 2 ))
+then
+  echo "Please enter the correct number of arguements"
+  echo "Usage: ./disk-setup-uefi disk-name"
+fi
+
+echo -e "g\nn\n\n\n+500M\nt\n1\nn\n\n\n\nt\n\n30\nw\n" | fdisk $1
+
+mkfs.fat -F32 ${1}1
+
+pvcreate --dataalignment 1m ${1}2
+
+vgcreate volgroup0 ${1}2
+lvcreate -L ${2}GB volgroup0 -n root
+lvcreate -l 100%FREE volgroup0 -n home
+
+modeprobe dm_mod
+vgscan
+vgchange -ay
+
+mkfs.ext4 /dev/volgroup0/root
+mount /dev/volgroup0/root /mnt
+
+mkfs.ext4 /dev/volgroup0/home
+mkdir /mnt/home
+mount /dev/volgroup0/home /mnt/home
+
+mkdir /mnt/etc
+genfstab -U -p /mnt >> /mnt/etc/fstab
