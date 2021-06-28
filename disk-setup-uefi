@@ -27,5 +27,4 @@ mkfs.ext4 /dev/volgroup0/home
 mkdir /mnt/home
 mount /dev/volgroup0/home /mnt/home
 
-mkdir /mnt/etc
-genfstab -U -p /mnt >> /mnt/etc/fstab
+genfstab -U /mnt >> /mnt/etc/fstab

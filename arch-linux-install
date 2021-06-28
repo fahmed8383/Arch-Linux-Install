@@ -1,0 +1,35 @@
+#!/bin/bash
+
+if (( $# != 4 ))
+then
+  echo "Please enter the correct number of arguements"
+  echo "Usage: ./disk-setup-uefi disk-name"
+fi
+
+echo -e "Y\n" | pacstrap -i /mnt base
+
+arch-chroot /mnt
+
+echo -e "1\nY\n" | pacman -S linux-lts linux-lts-headers linux-firmware
+echo | pacman -S nano
+echo -e "\nY\n" | pacman -S base-devel openssh
+echo -e "\nY\n" | pacman -S networkmanager wpa_supplicant wireless_tools netctl
+echo | pacman -S lvm2
+
+systemctl enable sshd
+systemctl enable NetworkManager
+
+sed -i 's/HOOKS=(base udev autodetect modconf block filesystems keyboard fsck)/\
+HOOKS=(base udev autodetect modconf block lvm2 filesystems keyboard fsck)/' /etc/mkinitcpio.conf
+
+mkinitcpio -p linux-lts
+
+sed -i 's/#'"${1}"'.UTF-8 UTF-8/'"${1}"'.UTF-8 UTF-8/' /etc/locale.gen
+locale-gen
+
+echo -e "$2\n$2\n" | passwd
+
+useradd -m -g users -G wheel $3
+echo -e "$4\n$4\n" | passwd $3
+
+sed -i 's/# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/' /etc/sudoers

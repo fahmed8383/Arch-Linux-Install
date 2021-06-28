@@ -24,6 +24,7 @@ git clone https://gitlab.com/fahmed8383/arch-linux-install.git
 Next we want to make all the following scripts executable. To do this run the following commands:
 
 ```
+cd arch-linux-install
 chmod u+x ./disk-setup-uefi
 ```
 
