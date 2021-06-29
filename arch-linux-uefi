@@ -7,37 +7,38 @@ get_drive () {
     read drive
 }
 
-while ! fdisk -l | grep -q " $drive:";
+get_drive
+
+while ! fdisk -l | grep -q " $drive:"
 do
 echo "Please enter a valid drive name"
 get_drive
-fi
+done
 
 echo "Please enter the amount of GB you would like to allocate to root: "
-
 read root
 
 get_tz () {
     echo "Please enter your timezone for locale.gen. You can find this in the /etc/locale.gen file: "
-
     read tz
 }
 
-while ! grep -q $tz "/etc/locale.gen";
+get_tz
+
+while ! cat /etc/locale.gen | grep -q $tz
 do
 echo "Please enter a valid timezone"
 get_tz
-fi
+done
 
 ask_root_pwd () {
     echo "Please enter your password for root: "
-
     read -s rootpwd
-
     echo "Please conmfirm your password for root: "
-
     read -s rootpwdvalid
 }
+
+ask_root_pwd
 
 while [ $rootpwd != $rootpwdvalid ]
 do
@@ -51,13 +52,12 @@ read user
 
 ask_pwd () {
     echo "Please enter your password: "
-
     read -s pwd
-
     echo "Please conmfirm your password: "
-
     read -s pwdvalid
 }
+
+ask_pwd
 
 while [ $pwd != $pwdvalid ]
 do
@@ -75,11 +75,13 @@ get_tz_service () {
     read tz_service
 }
 
+get_tz_service
+
 while ! timedatectl list-timezones | grep -q $tz_service
 do
 echo "Please enter a valid timezone"
 get_tz_service
-fi
+done
 
 #################################
 
@@ -167,3 +169,5 @@ timedatectl set-timezone $tz_service
 systemctl enable systemd-timesyncd
 
 EOM
+
+umount -a
