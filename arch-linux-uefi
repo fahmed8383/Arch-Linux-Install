@@ -1,24 +1,33 @@
 #!/bin/bash
 
-echo "WARNING: THIS WILL OVERWRITE ALL DATA ON THIS DISK"
-echo
-echo "Please enter the name of the disk you would like to partition: "
+get_drive () {
+    echo "WARNING: THIS WILL OVERWRITE ALL DATA ON THIS DISK"
+    echo
+    echo "Please enter the name of the disk you would like to partition: "
+    read drive
+}
 
-read drive
-
-if ! fdisk -l | grep -q " $drive:";
-then
+while ! fdisk -l | grep -q " $drive:";
+do
 echo "Please enter a valid drive name"
-exit 0
+get_drive
 fi
 
 echo "Please enter the amount of GB you would like to allocate to root: "
 
 read root
 
-echo "Please enter your timezone. You can find this in the /etc/locale.gen file: "
+get_tz () {
+    echo "Please enter your timezone for locale.gen. You can find this in the /etc/locale.gen file: "
 
-read tz
+    read tz
+}
+
+while ! grep -q $tz "/etc/locale.gen";
+do
+echo "Please enter a valid timezone"
+get_tz
+fi
 
 ask_root_pwd () {
     echo "Please enter your password for root: "
@@ -32,6 +41,7 @@ ask_root_pwd () {
 
 while [ $rootpwd != $rootpwdvalid ]
 do
+echo "Passwords do not match"
 ask_root_pwd
 done
 
@@ -51,8 +61,25 @@ ask_pwd () {
 
 while [ $pwd != $pwdvalid ]
 do
+echo "Passwords do not match"
 ask_pwd
 done
+
+echo "Please enter the amount of GB you would like to allocate to swap (half of your total RAM is recommended): "
+
+read swap
+
+get_tz_service () {
+    echo "Please enter your timezone. You can find this with timedatectl list-timezones: "
+
+    read tz_service
+}
+
+while ! timedatectl list-timezones | grep -q $tz_service
+do
+echo "Please enter a valid timezone"
+get_tz_service
+fi
 
 #################################
 
@@ -119,6 +146,24 @@ cp /usr/share/locale/en\@quot/LC_MESSAGES/grub.mo /boot/grub/locale/en.mo
 
 grub-mkconfig -o /boot/grub/grub.cfg
 
-EOM
+cd root
 
-umount -a
+dd if=/dev/zero of=/swapfile bs=1M count=$((swap*1024)) status=progress
+
+chmod 600 /swapfile
+
+mkswap /swapfile
+
+cp /etc/fstab /etc/fstab.bak
+
+echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab
+
+mount -a
+
+swapon -a
+
+timedatectl set-timezone $tz_service
+
+systemctl enable systemd-timesyncd
+
+EOM
